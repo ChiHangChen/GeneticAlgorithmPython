@@ -339,12 +339,18 @@ class GA:
                     shape=(initial_population.shape[0], initial_population.shape[1]), dtype=object)
                 for gene_idx in range(initial_population.shape[1]):
                     if self.gene_type[gene_idx][1] is None:
-                        self.initial_population[:, gene_idx] = numpy.asarray(initial_population[:, gene_idx],
-                                                                             dtype=self.gene_type[gene_idx][0])
+                        self.initial_population[:, gene_idx] = numpy.asarray(
+                            initial_population[:, gene_idx],
+                            dtype=self.gene_type[gene_idx][0]
+                        )
                     else:
-                        self.initial_population[:, gene_idx] = numpy.round(numpy.asarray(initial_population[:, gene_idx],
-                                                                                         dtype=self.gene_type[gene_idx][0]),
-                                                                           self.gene_type[gene_idx][1])
+                        self.initial_population[:, gene_idx] = numpy.round(
+                            numpy.asarray(
+                                initial_population[:, gene_idx],
+                                dtype=self.gene_type[gene_idx][0]
+                            ),
+                            self.gene_type[gene_idx][1]
+                        )
 
             # A NumPy array holding the initial population.
             self.population = self.initial_population.copy()
@@ -525,7 +531,7 @@ class GA:
                         mutation_percent_genes = 10
                         # Based on the mutation percentage in the 'mutation_percent_genes' parameter, the number of genes to mutate is calculated.
                         mutation_num_genes = numpy.uint32(
-                            (mutation_percent_genes*self.num_genes)/100)
+                            (mutation_percent_genes * self.num_genes)/100)
                         # Based on the mutation percentage of genes, if the number of selected genes for mutation is less than the least possible value which is 1, then the number will be set to 1.
                         if mutation_num_genes == 0:
                             if self.mutation_probability is None:
@@ -546,7 +552,7 @@ class GA:
 
                             # Based on the mutation percentage in the 'mutation_percent_genes' parameter, the number of genes to mutate is calculated.
                             mutation_num_genes = numpy.uint32(
-                                (mutation_percent_genes*self.num_genes) / 100)
+                                (mutation_percent_genes * self.num_genes) / 100)
                             # Based on the mutation percentage of genes, if the number of selected genes for mutation is less than the least possible value which is 1, then the number will be set to 1.
                             if mutation_num_genes == 0:
                                 if self.mutation_probability is None:
@@ -1455,7 +1461,7 @@ class GA:
                     fitness = self.solutions_fitness[self.solutions.index(
                         list(sol))]
                 # If the solutions are not saved (i.e. `save_solutions=False`), check if this solution is a parent from the previous generation and its fitness value is already calculated. If so, use the fitness value instead of calling the fitness function.
-                if not (self.last_generation_parents is None) and len(numpy.where(numpy.all(self.last_generation_parents == sol, axis=1))[0] > 0):
+                if (self.last_generation_parents is not None) and len(numpy.where(numpy.all(self.last_generation_parents == sol, axis=1))[0] > 0):
                     # Index of the parent in the parents array (self.last_generation_parents). This is not its index within the population.
                     parent_idx = numpy.where(
                         numpy.all(self.last_generation_parents == sol, axis=1))[0][0]
@@ -1982,7 +1988,7 @@ class GA:
         offspring = self.generate_new_genes(size=offspring_size)
 
         for k in range(offspring_size[0]):
-            if not (self.crossover_probability is None):
+            if self.crossover_probability is not None:
                 probs = numpy.random.random(size=parents.shape[0])
                 indices = numpy.where(probs <= self.crossover_probability)[0]
 
@@ -3287,11 +3293,25 @@ class GA:
 
         fig = matplotlib.pyplot.figure()
         if plot_type == "plot":
-            matplotlib.pyplot.plot(self.best_solutions_fitness, linewidth=linewidth, color=color)
+            matplotlib.pyplot.plot(
+                self.best_solutions_fitness,
+                linewidth=linewidth,
+                color=color
+            )
         elif plot_type == "scatter":
-            matplotlib.pyplot.scatter(range(self.generations_completed + 1), self.best_solutions_fitness, linewidth=linewidth, color=color)
+            matplotlib.pyplot.scatter(
+                range(self.generations_completed + 1),
+                self.best_solutions_fitness,
+                linewidth=linewidth,
+                color=color
+            )
         elif plot_type == "bar":
-            matplotlib.pyplot.bar(range(self.generations_completed + 1), self.best_solutions_fitness, linewidth=linewidth, color=color)
+            matplotlib.pyplot.bar(
+                range(self.generations_completed + 1),
+                self.best_solutions_fitness,
+                linewidth=linewidth,
+                color=color
+            )
         matplotlib.pyplot.title(title, fontsize=font_size)
         matplotlib.pyplot.xlabel(xlabel, fontsize=font_size)
         matplotlib.pyplot.ylabel(ylabel, fontsize=font_size)
@@ -3364,8 +3384,10 @@ class GA:
         matplotlib.pyplot.ylabel(ylabel, fontsize=font_size)
 
         if save_dir is not None:
-            matplotlib.pyplot.savefig(fname=save_dir,
-                                      bbox_inches='tight')
+            matplotlib.pyplot.savefig(
+                fname=save_dir,
+                bbox_inches='tight'
+            )
         matplotlib.pyplot.show()
 
         return fig
@@ -3474,7 +3496,11 @@ class GA:
                                 # axs[row_idx, col_idx].remove()
                                 break
                             if plot_type == "plot":
-                                axs[row_idx, col_idx].plot(solutions_to_plot[:, gene_idx], linewidth=linewidth, color=fill_color)
+                                axs[row_idx, col_idx].plot(
+                                    solutions_to_plot[:, gene_idx],
+                                    linewidth=linewidth,
+                                    color=fill_color
+                                )
                             elif plot_type == "scatter":
                                 axs[row_idx, col_idx].scatter(
                                     range(solutions_to_plot.shape[0]),
@@ -3483,8 +3509,12 @@ class GA:
                                     color=fill_color
                                 )
                             elif plot_type == "bar":
-                                axs[row_idx, col_idx].bar(range(solutions_to_plot.shape[0]), solutions_to_plot[:,
-                                                          gene_idx], linewidth=linewidth, color=fill_color)
+                                axs[row_idx, col_idx].bar(
+                                    range(solutions_to_plot.shape[0]),
+                                    solutions_to_plot[:, gene_idx],
+                                    linewidth=linewidth,
+                                    color=fill_color
+                                )
                             axs[row_idx, col_idx].set_xlabel("Gene " + str(gene_idx), fontsize=font_size)
                             gene_idx += 1
 
