@@ -8,7 +8,6 @@ import concurrent.futures
 
 
 class GA:
-
     supported_int_types = [int, numpy.int, numpy.int8, numpy.int16, numpy.int32,
                            numpy.int64, numpy.uint, numpy.uint8, numpy.uint16, numpy.uint32, numpy.uint64]
     supported_float_types = [float, numpy.float,
@@ -2981,50 +2980,33 @@ class GA:
             for duplicate_index in not_unique_indices:
                 for trial_index in range(num_trials):
                     if self.gene_type_single:
-                        if gene_type[0] in GA.supported_int_types:
-                            temp_val = self.unique_int_gene_from_range(solution=new_solution,
-                                                                       gene_index=duplicate_index,
-                                                                       min_val=min_val,
-                                                                       max_val=max_val,
-                                                                       mutation_by_replacement=mutation_by_replacement,
-                                                                       gene_type=gene_type)
-                        else:
-                            temp_val = numpy.random.uniform(low=min_val,
-                                                            high=max_val,
-                                                            size=1)
-                            if mutation_by_replacement:
-                                pass
-                            else:
-                                temp_val = new_solution[duplicate_index] + temp_val
+                        gene_type_index = 0
+                        target_gene_type = gene_type
                     else:
-                        if gene_type[duplicate_index] in GA.supported_int_types:
-                            temp_val = self.unique_int_gene_from_range(solution=new_solution,
-                                                                       gene_index=duplicate_index,
-                                                                       min_val=min_val,
-                                                                       max_val=max_val,
-                                                                       mutation_by_replacement=mutation_by_replacement,
-                                                                       gene_type=gene_type)
+                        gene_type_index = duplicate_index
+                        target_gene_type = gene_type[duplicate_index]
+                    if gene_type[gene_type_index] in GA.supported_int_types:
+                        temp_val = self.unique_int_gene_from_range(
+                            solution=new_solution,
+                            gene_index=duplicate_index,
+                            min_val=min_val,
+                            max_val=max_val,
+                            mutation_by_replacement=mutation_by_replacement,
+                            gene_type=gene_type
+                        )
+                    else:
+                        temp_val = numpy.random.uniform(low=min_val,
+                                                        high=max_val,
+                                                        size=1)
+                        if mutation_by_replacement:
+                            pass
                         else:
-                            temp_val = numpy.random.uniform(low=min_val,
-                                                            high=max_val,
-                                                            size=1)
-                            if mutation_by_replacement:
-                                pass
-                            else:
-                                temp_val = new_solution[duplicate_index] + temp_val
+                            temp_val = new_solution[duplicate_index] + temp_val
 
-                    if self.gene_type_single:
-                        if gene_type[1] is not None:
-                            temp_val = numpy.round(gene_type[0](temp_val),
-                                                   gene_type[1])
-                        else:
-                            temp_val = gene_type[0](temp_val)
+                    if target_gene_type[1] is not None:
+                        temp_val = numpy.round(target_gene_type[0](temp_val), target_gene_type[1])
                     else:
-                        if gene_type[duplicate_index][1] is not None:
-                            temp_val = numpy.round(gene_type[duplicate_index][0](temp_val),
-                                                   gene_type[duplicate_index][1])
-                        else:
-                            temp_val = gene_type[duplicate_index][0](temp_val)
+                        temp_val = target_gene_type[0](temp_val)
 
                     if temp_val in new_solution and trial_index == (num_trials - 1):
                         num_unsolved_duplicates = num_unsolved_duplicates + 1
@@ -3067,33 +3049,29 @@ class GA:
         # First try to solve the duplicates.
         # For a solution like [3 2 0 0], the indices of the 2 duplicating genes are 2 and 3.
         # The next call to the find_unique_value() method tries to change the value of the gene with index 3 to solve the duplicate.
-        if len(not_unique_indices) > 0:
-            new_solution, not_unique_indices, num_unsolved_duplicates = self.unique_genes_by_space(new_solution=new_solution,
-                                                                                                   gene_type=gene_type,
-                                                                                                   not_unique_indices=not_unique_indices,
-                                                                                                   num_trials=10,
-                                                                                                   build_initial_pop=build_initial_pop)
-        else:
-            return new_solution, not_unique_indices, len(not_unique_indices)
 
-        # Do another try if there exist duplicate genes.
-        # If there are no possible values for the gene 3 with index 3 to solve the duplicate, try to change the value of the other gene with index 2.
-        if len(not_unique_indices) > 0:
+        # If there exist duplicate genes, then changing either of the 2 duplicating genes (with indices 2 and 3) will not solve the problem.
+        # This problem can be solved by randomly changing one of the non-duplicating genes that may make a room for a unique value in one the 2 duplicating genes.
+        # For example, if gene_space=[[3, 0, 1], [4, 1, 2], [0, 2], [3, 2, 0]] and the solution is [3 2 0 0], then the values of the last 2 genes duplicate.
+        # There are no possible changes in the last 2 genes to solve the problem. But it could be solved by changing the second gene from 2 to 4.
+        # As a result, any of the last 2 genes can take the value 2 and solve the duplicates.
+        retry = 0
+        while len(not_unique_indices) > 0 and retry < 2:
+            new_solution, not_unique_indices, num_unsolved_duplicates = self.unique_genes_by_space(
+                new_solution=new_solution,
+                gene_type=gene_type,
+                not_unique_indices=not_unique_indices,
+                num_trials=10,
+                build_initial_pop=build_initial_pop
+            )
             not_unique_indices = set(numpy.where(new_solution == new_solution[list(not_unique_indices)[0]])[0]) - set([list(not_unique_indices)[0]])
-            new_solution, not_unique_indices, num_unsolved_duplicates = self.unique_genes_by_space(new_solution=new_solution,
-                                                                                                   gene_type=gene_type,
-                                                                                                   not_unique_indices=not_unique_indices,
-                                                                                                   num_trials=10,
-                                                                                                   build_initial_pop=build_initial_pop)
-        else:
-            # If there exist duplicate genes, then changing either of the 2 duplicating genes (with indices 2 and 3) will not solve the problem.
-            # This problem can be solved by randomly changing one of the non-duplicating genes that may make a room for a unique value in one the 2 duplicating genes.
-            # For example, if gene_space=[[3, 0, 1], [4, 1, 2], [0, 2], [3, 2, 0]] and the solution is [3 2 0 0], then the values of the last 2 genes duplicate.
-            # There are no possible changes in the last 2 genes to solve the problem. But it could be solved by changing the second gene from 2 to 4.
-            # As a result, any of the last 2 genes can take the value 2 and solve the duplicates.
+            # Do another try if there exist duplicate genes.
+            # If there are no possible values for the gene 3 with index 3 to solve the duplicate, try to change the value of the other gene with index 2.
+            retry += 1
+        if len(not_unique_indices) > 0:
             return new_solution, not_unique_indices, len(not_unique_indices)
-
-        return new_solution, not_unique_indices, num_unsolved_duplicates
+        else:
+            return new_solution, not_unique_indices, num_unsolved_duplicates
 
     def solve_duplicate_genes_by_space_OLD(self, solution, gene_type, num_trials=10):
         # /////////////////////////
@@ -3115,7 +3093,6 @@ class GA:
                         gene_idx=duplicate_index,
                         gene_type=gene_type
                     )
-
                     if temp_val in new_solution and trial_index == (num_trials - 1):
                         # print("temp_val, duplicate_index", temp_val, duplicate_index, new_solution)
                         num_unsolved_duplicates = num_unsolved_duplicates + 1
@@ -3127,7 +3104,6 @@ class GA:
                         new_solution[duplicate_index] = temp_val
                         # print("SOLVED", duplicate_index)
                         break
-
                 # Update the list of duplicate indices after each iteration.
                 _, unique_gene_indices = numpy.unique(new_solution, return_index=True)
                 not_unique_indices = set(range(len(solution))) - set(unique_gene_indices)
@@ -3151,39 +3127,28 @@ class GA:
         """
 
         if self.gene_type_single:
-            if step is None:
-                all_gene_values = numpy.arange(min_val, max_val, dtype=gene_type[0])
-            else:
-                # For non-integer steps, the numpy.arange() function returns zeros id the dtype parameter is set to an integer data type. So, this returns zeros if step is non-integer and dtype is set to an int data type: numpy.arange(min_val, max_val, step, dtype=gene_type[0])
-                # To solve this issue, the data type casting will not be handled inside numpy.arange(). The range is generated by numpy.arange() and then the data type is converted using the numpy.asarray() function.
-                all_gene_values = numpy.asarray(numpy.arange(min_val, max_val, step), dtype=gene_type[0])
+            target_gene_type = gene_type
         else:
-            if step is None:
-                all_gene_values = numpy.arange(min_val, max_val, dtype=gene_type[gene_index][0])
-            else:
-                all_gene_values = numpy.asarray(numpy.arange(min_val, max_val, step), dtype=gene_type[gene_index][0])
+            target_gene_type = gene_type[gene_index]
+        if step is None:
+            all_gene_values = numpy.arange(min_val, max_val, dtype=target_gene_type[0])
+        else:
+            # For non-integer steps, the numpy.arange() function returns zeros id the dtype parameter is set to an integer data type. So, this returns zeros if step is non-integer and dtype is set to an int data type: numpy.arange(min_val, max_val, step, dtype=gene_type[0])
+            # To solve this issue, the data type casting will not be handled inside numpy.arange(). The range is generated by numpy.arange() and then the data type is converted using the numpy.asarray() function.
+            all_gene_values = numpy.asarray(numpy.arange(min_val, max_val, step), dtype=target_gene_type[0])
 
         if mutation_by_replacement:
             pass
         else:
             all_gene_values = all_gene_values + solution[gene_index]
 
-        if self.gene_type_single:
-            if gene_type[1] is not None:
-                all_gene_values = numpy.round(gene_type[0](all_gene_values),
-                                              gene_type[1])
-            else:
-                if type(all_gene_values) is numpy.ndarray:
-                    all_gene_values = numpy.asarray(all_gene_values, dtype=gene_type[0])
-                else:
-                    all_gene_values = gene_type[0](all_gene_values)
+        if target_gene_type[1] is not None:
+            all_gene_values = numpy.round(target_gene_type[0](all_gene_values), target_gene_type[1])
         else:
-            if gene_type[gene_index][1] is not None:
-                all_gene_values = numpy.round(gene_type[gene_index][0](all_gene_values),
-                                              gene_type[gene_index][1])
+            if type(all_gene_values) is numpy.ndarray:
+                all_gene_values = numpy.asarray(all_gene_values, dtype=target_gene_type[0])
             else:
-                all_gene_values = gene_type[gene_index][0](all_gene_values)
-
+                all_gene_values = target_gene_type[0](all_gene_values)
         values_to_select_from = list(set(all_gene_values) - set(solution))
 
         if len(values_to_select_from) == 0:
@@ -3192,12 +3157,6 @@ class GA:
             selected_value = solution[gene_index]
         else:
             selected_value = random.choice(values_to_select_from)
-
-        # if self.gene_type_single:
-        #    selected_value = gene_type[0](selected_value)
-        # else:
-        #    selected_value = gene_type[gene_index][0](selected_value)
-
         return selected_value
 
     def unique_genes_by_space(self, new_solution, gene_type, not_unique_indices, num_trials=10, build_initial_pop=False):
